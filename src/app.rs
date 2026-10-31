@@ -12,6 +12,8 @@ use ratatui::{
 use sysinfo::{
     CpuRefreshKind, 
     MemoryRefreshKind,
+    ProcessRefreshKind,
+    ProcessesToUpdate,
     RefreshKind, 
     System, 
     MINIMUM_CPU_UPDATE_INTERVAL
@@ -23,10 +25,18 @@ use crate::ui;
 const TICK_RATE: Duration = Duration::from_millis(1000);
 const HISTORY_LEN: usize = 200;
 
+pub struct ProcessInfo {
+    pub pid: u32,
+    pub name: String,
+    pub cpu: f32,
+    pub memory: u64,
+}
+
 pub struct App {
     sys: System,
     running: bool,
     pub cpu_history: VecDeque<u64>,
+    pub processes: Vec<ProcessInfo>,
 }
 
 impl App {
@@ -41,18 +51,43 @@ impl App {
             sys: sys.expect("REASON"),
             running: true,
             cpu_history: VecDeque::with_capacity(HISTORY_LEN),
+            processes: Vec::new(),
         }
     }
 
-    fn refresh(&mut self) {
+    fn refresh_sys(&mut self) {
         self.sys.refresh_cpu_usage();
         self.sys.refresh_memory();
+        self.sys.refresh_processes_specifics(
+            ProcessesToUpdate::All,
+            true, // remove processes that have exited
+            ProcessRefreshKind::nothing().with_cpu().with_memory(),
+        );
+    }
+
+    fn refresh(&mut self) {
+        self.refresh_sys();
 
         let cpu = self.cpu_percent().round() as u64;
         self.cpu_history.push_back(cpu);
         if self.cpu_history.len() > HISTORY_LEN {
             self.cpu_history.pop_front();
         }
+
+        self.processes = self
+            .sys
+            .processes()
+            .values()
+            .map(|p| ProcessInfo {
+                pid: p.pid().as_u32(),
+                name: p.name().to_string_lossy().into_owned(),
+                cpu: p.cpu_usage(),
+                memory: p.memory(),
+            })
+            .collect();
+
+        // highest cpu first
+        self.processes.sort_by(|a, b| b.cpu.total_cmp(&a.cpu));
     }
 
     pub fn cpu_percent(&self) -> f64 {
@@ -68,7 +103,7 @@ impl App {
     }
 
     pub fn run(&mut self, terminal: &mut DefaultTerminal) -> io::Result<()> {
-        self.sys.refresh_cpu_usage();
+        self.refresh_sys();
         std::thread::sleep(MINIMUM_CPU_UPDATE_INTERVAL);
         self.refresh();
 

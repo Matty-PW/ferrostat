@@ -1,16 +1,17 @@
 use ratatui::{ 
     layout::{Constraint, Layout},
-    style::{Color, Style},
-    widgets::{Block, Gauge, Sparkline},
+    style::{Color, Modifier, Style},
+    widgets::{Block, Gauge, Sparkline, Row, Table},
     Frame,
 };
 
 use crate::app::App;
 
 pub fn draw(frame: &mut Frame, app: &App) {
-        let [cpu_area, mem_area, cpu_graph_area] = Layout::vertical([
+        let [cpu_area, mem_area, cpu_graph_area, table_area] = Layout::vertical([
             Constraint::Length(3), 
             Constraint::Length(3),
+            Constraint::Length(8),
             Constraint::Min(5),
             ])
             .areas(frame.area());
@@ -48,4 +49,41 @@ pub fn draw(frame: &mut Frame, app: &App) {
                 .data(&data),
             cpu_graph_area,
         );
+
+        let header = Row::new(["PID", "Name", "CPU%", "Memory"])
+            .style(Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD));
+
+        let rows = app.processes.iter().map(|p| {
+            Row::new([
+                p.pid.to_string(),
+                p.name.clone(),
+                format!("{:.1}", p.cpu),
+                format_bytes(p.memory),
+            ])
+        });
+
+        let widths = [
+            Constraint::Length(8), 
+            Constraint::Min(10),
+            Constraint::Length(7),
+            Constraint::Length(10),
+        ];
+
+        frame.render_widget(
+            Table::new(rows, widths)
+                .header(header)
+                .block(Block::bordered().title(" Processes ")),
+            table_area,
+        );
     }
+
+fn format_bytes(bytes: u64) -> String {
+    const MIB: f64 = 1024.0 * 1024.0;
+    const GIB: f64 = MIB * 1024.0;
+    let b = bytes as f64;
+    if b >= GIB {
+        format!("{:.1} GIB", b / GIB)
+    } else {
+        format!("{:.1} MIB", b / MIB)
+    }
+}
