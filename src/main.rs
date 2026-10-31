@@ -35,7 +35,7 @@ impl App {
                 .with_cpu(CpuRefreshKind::everything())
                 .with_memory(MemoryRefreshKind::everything()),
         );
-        Self { sys, running: true }
+        Self { sys: sys.expect("REASON"), running: true }
     }
 
     fn refresh(&mut self) {
@@ -97,7 +97,7 @@ impl App {
         let cpu = self.cpu_percent();
         frame.render_widget(    
             Gauge::default()
-                .block(Block::bordered().title("CPU"))
+                .block(Block::bordered().title(" CPU "))
                 .gauge_style(Style::default().fg(Color::Cyan))
                 .percent(cpu.clamp(0.0, 100.0) as u16)
                 .label(format!("{cpu:.1}%")),
@@ -107,7 +107,7 @@ impl App {
         let mem = self.mem_percent();
         frame.render_widget(    
             Gauge::default()
-                .block(Block::bordered().title("Memory (q to quit)"))
+                .block(Block::bordered().title(" Memory (q to quit) "))
                 .gauge_style(Style::default().fg(Color::Green))
                 .percent(mem.clamp(0.0, 100.0) as u16)
                 .label(format!("{mem:.1}%")),
