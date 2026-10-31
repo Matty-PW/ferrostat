@@ -4,10 +4,10 @@ use std::{
 };
 
 use ratatui::{ 
-    crossterm::event::{self, Event, Keycode, KeyEventKind},
+    crossterm::event::{self, Event, KeyCode, KeyEventKind},
     layout::{Constraint, Layout},
     style::{Color, Style},
-    widgets::{Block, Guage},
+    widgets::{Block, Gauge},
     DefaultTerminal, Frame,
 };
 
@@ -20,7 +20,7 @@ use sysinfo::{
 };
 
 // how often to refresh metrics
-const TICK_RATE: Duration = Duration::from_millis(1000)
+const TICK_RATE: Duration = Duration::from_millis(1000);
 
 struct App {
     sys: System,
@@ -85,7 +85,7 @@ impl App {
 
     fn handle_key(&mut self, code: KeyCode) {
         match code {
-            KeyCode::char('q') | KeyCode::Esc => self.running = false,
+            KeyCode::Char('q') | KeyCode::Esc => self.running = false,
             _ => {}
         }
     }
@@ -96,12 +96,22 @@ impl App {
 
         let cpu = self.cpu_percent();
         frame.render_widget(    
-            Guage::default()
+            Gauge::default()
                 .block(Block::bordered().title("CPU"))
-                .guage_style(Style::default().fg(Color::Cyan))
+                .gauge_style(Style::default().fg(Color::Cyan))
                 .percent(cpu.clamp(0.0, 100.0) as u16)
                 .label(format!("{cpu:.1}%")),
             cpu_area,
+        );
+
+        let mem = self.mem_percent();
+        frame.render_widget(    
+            Gauge::default()
+                .block(Block::bordered().title("Memory (q to quit)"))
+                .gauge_style(Style::default().fg(Color::Green))
+                .percent(mem.clamp(0.0, 100.0) as u16)
+                .label(format!("{mem:.1}%")),
+            mem_area,
         );
     }
 }
