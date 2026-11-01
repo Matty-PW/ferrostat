@@ -78,6 +78,7 @@ impl App {
             .sys
             .processes()
             .values()
+            .filter(|p| p.thread_kind().is_none())
             .map(|p| ProcessInfo {
                 pid: p.pid().as_u32(),
                 name: p.name().to_string_lossy().into_owned(),
