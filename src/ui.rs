@@ -7,7 +7,7 @@ use ratatui::{
 
 use crate::app::App;
 
-pub fn draw(frame: &mut Frame, app: &App) {
+pub fn draw(frame: &mut Frame, app: &mut App) {
         let [cpu_area, mem_area, cpu_graph_area, table_area] = Layout::vertical([
             Constraint::Length(3), 
             Constraint::Length(3),
@@ -62,19 +62,20 @@ pub fn draw(frame: &mut Frame, app: &App) {
             ])
         });
 
-        let widths = [
+        let width = [
             Constraint::Length(8), 
             Constraint::Min(10),
             Constraint::Length(7),
             Constraint::Length(10),
         ];
 
-        frame.render_widget(
-            Table::new(rows, widths)
-                .header(header)
-                .block(Block::bordered().title(" Processes ")),
-            table_area,
-        );
+        let table = Table::new(rows, width)
+            .header(header)
+            .block(Block::bordered().title(" Processes (↑↓/jk select) "))
+            .row_highlight_style(Style::default().bg(Color::DarkGray).add_modifier(Modifier::BOLD))
+            .highlight_symbol("> ");
+
+        frame.render_stateful_widget(table, table_area, &mut app.table_state);
     }
 
 fn format_bytes(bytes: u64) -> String {

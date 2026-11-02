@@ -6,6 +6,7 @@ use std::{
 
 use ratatui::{ 
     crossterm::event::{self, Event, KeyCode, KeyEventKind},
+    widgets::TableState,
     DefaultTerminal,
 };
 
@@ -37,6 +38,7 @@ pub struct App {
     running: bool,
     pub cpu_history: VecDeque<u64>,
     pub processes: Vec<ProcessInfo>,
+    pub table_state: TableState,
 }
 
 impl App {
@@ -52,6 +54,7 @@ impl App {
             running: true,
             cpu_history: VecDeque::with_capacity(HISTORY_LEN),
             processes: Vec::new(),
+            table_state: TableState::default().with_selected(Some(0)),
         }
     }
 
@@ -131,13 +134,34 @@ impl App {
         Ok(())
     }
 
+    fn select_next(&mut self) {
+        if self.processes.is_empty() {
+            return;
+        }
+        let last = self.processes.len() - 1;
+        let i = match self.table_state.selected() {
+            Some(i) => (i + 1).min(last),
+            None => 0,
+        };
+        self.table_state.select(Some(i));
+    }
+
+    fn select_previous(&mut self) {
+        let i = match self.table_state.selected() {
+            Some(i) => i.saturating_sub(1),
+            None => 0,
+        };
+        self.table_state.select(Some(i))
+    }
+
     fn handle_key(&mut self, code: KeyCode) {
         match code {
             KeyCode::Char('q') | KeyCode::Esc => self.running = false,
+            KeyCode::Down | KeyCode::Char('j') => self.select_next(),
+            KeyCode::Up | KeyCode::Char('k') => self.select_previous(),
             _ => {}
         }
     }
-
     
 }
 
