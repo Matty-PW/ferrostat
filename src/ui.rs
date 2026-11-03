@@ -5,7 +5,7 @@ use ratatui::{
     Frame,
 };
 
-use crate::app::App;
+use crate::app::{App, SortBy};
 
 pub fn draw(frame: &mut Frame, app: &mut App) {
         let [cpu_area, mem_area, cpu_graph_area, table_area] = Layout::vertical([
@@ -50,7 +50,23 @@ pub fn draw(frame: &mut Frame, app: &mut App) {
             cpu_graph_area,
         );
 
-        let header = Row::new(["PID", "Name", "CPU%", "Memory"])
+        let label = |text: &str, col: SortBy| {
+            if app.sort_by != col {
+                return text.to_string();
+            }
+            let arrow = match col {
+                SortBy::Pid | SortBy::Name => "▲",
+                SortBy::Cpu | SortBy::Memory => "▼",
+            };
+            format!("{text} {arrow}")
+        };
+
+        let header = Row::new([
+            label("PID", SortBy::Pid),
+            label("Name", SortBy::Name),
+            label("CPU%", SortBy::Cpu),
+            label("Memory", SortBy::Memory),
+            ])
             .style(Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD));
 
         let rows = app.processes.iter().map(|p| {
@@ -71,7 +87,7 @@ pub fn draw(frame: &mut Frame, app: &mut App) {
 
         let table = Table::new(rows, width)
             .header(header)
-            .block(Block::bordered().title(" Processes (↑↓/jk select) "))
+            .block(Block::bordered().title(" Processes (↑↓/jk select, 's' to sort) "))
             .row_highlight_style(Style::default().bg(Color::DarkGray).add_modifier(Modifier::BOLD))
             .highlight_symbol("> ");
 

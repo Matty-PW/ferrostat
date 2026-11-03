@@ -33,12 +33,32 @@ pub struct ProcessInfo {
     pub memory: u64,
 }
 
+#[derive(Clone, Copy, PartialEq)]
+pub enum SortBy {
+    Cpu,
+    Memory,
+    Pid,
+    Name,
+}
+
+impl SortBy {
+    fn next(self) -> Self {
+        match self {
+            SortBy::Cpu => SortBy::Memory,
+            SortBy::Memory => SortBy::Pid,
+            SortBy::Pid => SortBy::Name,
+            SortBy::Name => SortBy::Cpu,
+        }
+    }
+}
+
 pub struct App {
     sys: System,
     running: bool,
     pub cpu_history: VecDeque<u64>,
     pub processes: Vec<ProcessInfo>,
     pub table_state: TableState,
+    pub sort_by: SortBy,
 }
 
 impl App {
@@ -55,6 +75,7 @@ impl App {
             cpu_history: VecDeque::with_capacity(HISTORY_LEN),
             processes: Vec::new(),
             table_state: TableState::default().with_selected(Some(0)),
+            sort_by: SortBy::Cpu,
         }
     }
 
@@ -77,6 +98,8 @@ impl App {
             self.cpu_history.pop_front();
         }
 
+        let selected = self.selected_pid();
+
         self.processes = self
             .sys
             .processes()
@@ -91,7 +114,8 @@ impl App {
             .collect();
 
         // highest cpu first
-        self.processes.sort_by(|a, b| b.cpu.total_cmp(&a.cpu));
+        self.sort_processes();
+        self.restore_selection(selected);
     }
 
     pub fn cpu_percent(&self) -> f64 {
@@ -159,9 +183,45 @@ impl App {
             KeyCode::Char('q') | KeyCode::Esc => self.running = false,
             KeyCode::Down | KeyCode::Char('j') => self.select_next(),
             KeyCode::Up | KeyCode::Char('k') => self.select_previous(),
+            KeyCode::Char('s') => self.cycle_sort(),
             _ => {}
         }
     }
-    
+
+    fn sort_processes(&mut self) {
+        match self.sort_by {
+            SortBy::Cpu => self.processes.sort_by(|a, b| b.cpu.total_cmp(&a.cpu)),
+            SortBy::Memory => self.processes.sort_by(|a, b| b.memory.cmp(&a.memory)),
+            SortBy::Pid => self.processes.sort_by_key(|p| p.pid),
+            SortBy::Name => self.processes.sort_by_key(|p| p.name.to_lowercase()),
+        }
+    }
+
+    fn cycle_sort(&mut self) {
+        let selected = self.selected_pid();
+        self.sort_by = self.sort_by.next();
+        self.sort_processes();
+        self.restore_selection(selected);
+    }
+
+    fn selected_pid(&self) -> Option<u32> {
+        self.table_state
+            .selected()
+            .and_then(|i| self.processes.get(i))
+            .map(|p| p.pid)
+    }
+
+    fn restore_selection(&mut self, pid: Option<u32>) {
+        if self.processes.is_empty() {
+            self.table_state.select(None);
+            return;
+        }
+        let last = self.processes.len() - 1;
+        let index = pid
+            .and_then(|pid| self.processes.iter().position(|p| p.pid == pid))
+            .unwrap_or_else(|| self.table_state.selected().unwrap_or(0).min(last));
+        self.table_state.select(Some(index));
+    }
+
 }
 
