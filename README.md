@@ -7,6 +7,9 @@
 [![Built With Ratatui](https://img.shields.io/badge/Built_With_Ratatui-000?logo=ratatui&logoColor=fff)](https://ratatui.rs/)
 ![Rust](https://img.shields.io/badge/Rust-000?logo=rust&logoColor=fff)
 
+<img src="assets/screenshot.png" alt="Screenshot">
+
+
 </div>
 
 
