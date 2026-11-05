@@ -1,4 +1,5 @@
 use std::{
+    cmp::Reverse,
     collections::VecDeque,
     io,
     time::{Duration, Instant},
@@ -137,12 +138,11 @@ impl App {
 
             // wait for a key but no longer than the time left until the next tick
             let timeout = TICK_RATE.saturating_sub(last_tick.elapsed());
-            if event::poll(timeout)? {
-                if let Event::Key(key) = event::read()? {
-                    if key.kind == KeyEventKind::Press {
-                        self.handle_key(key.code);
-                    }
-                }
+            if event::poll(timeout)?
+                && let Event::Key(key) = event::read()?
+                && key.kind == KeyEventKind::Press
+            {
+                self.handle_key(key.code);
             }
 
             if last_tick.elapsed() >= TICK_RATE {
@@ -186,7 +186,7 @@ impl App {
     fn sort_processes(&mut self) {
         match self.sort_by {
             SortBy::Cpu => self.processes.sort_by(|a, b| b.cpu.total_cmp(&a.cpu)),
-            SortBy::Memory => self.processes.sort_by(|a, b| b.memory.cmp(&a.memory)),
+            SortBy::Memory => self.processes.sort_by_key(|p| Reverse(p.memory)),
             SortBy::Pid => self.processes.sort_by_key(|p| p.pid),
             SortBy::Name => self.processes.sort_by_key(|p| p.name.to_lowercase()),
         }
