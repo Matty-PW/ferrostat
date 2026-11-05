@@ -1,23 +1,18 @@
-use std::{ 
+use std::{
     collections::VecDeque,
-    io, 
+    io,
     time::{Duration, Instant},
 };
 
-use ratatui::{ 
+use ratatui::{
+    DefaultTerminal,
     crossterm::event::{self, Event, KeyCode, KeyEventKind},
     widgets::TableState,
-    DefaultTerminal,
 };
 
 use sysinfo::{
-    CpuRefreshKind, 
-    MemoryRefreshKind,
-    ProcessRefreshKind,
-    ProcessesToUpdate,
-    RefreshKind, 
-    System, 
-    MINIMUM_CPU_UPDATE_INTERVAL
+    CpuRefreshKind, MINIMUM_CPU_UPDATE_INTERVAL, MemoryRefreshKind, ProcessRefreshKind,
+    ProcessesToUpdate, RefreshKind, System,
 };
 
 use crate::ui;
@@ -69,7 +64,7 @@ impl App {
                 .with_cpu(CpuRefreshKind::everything())
                 .with_memory(MemoryRefreshKind::everything()),
         );
-        Self { 
+        Self {
             sys: sys.expect("REASON"),
             running: true,
             cpu_history: VecDeque::with_capacity(HISTORY_LEN),
@@ -222,6 +217,4 @@ impl App {
             .unwrap_or_else(|| self.table_state.selected().unwrap_or(0).min(last));
         self.table_state.select(Some(index));
     }
-
 }
-
