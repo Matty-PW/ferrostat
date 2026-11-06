@@ -25,3 +25,26 @@ impl History {
         self.samples.iter().skip(skip).copied().collect()
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn drops_oldest_when_full() {
+        let mut h = History::new(3);
+        for v = 1..=5 {
+            h.push(v)
+        }
+        assert_eq!(h.recent(10), vec![3, 4, 5]);
+    }
+
+    #[test]
+    fn recent_returns_newest_samples() {
+        let mut h = History::new(10);
+        for v in 1..=5 {
+            h.push(v)
+        }
+        assert_eq!(h.recent(2), vec![4, 5]);
+    }
+}
