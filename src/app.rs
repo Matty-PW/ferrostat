@@ -1,6 +1,5 @@
 use std::{
     cmp::Reverse,
-    collections::VecDeque,
     io,
     time::{Duration, Instant},
 };
@@ -16,6 +15,7 @@ use sysinfo::{
     ProcessesToUpdate, RefreshKind, System,
 };
 
+use crate::history::History;
 use crate::ui;
 
 // how often to refresh metrics
@@ -51,7 +51,7 @@ impl SortBy {
 pub struct App {
     sys: System,
     running: bool,
-    pub cpu_history: VecDeque<u64>,
+    pub cpu_history: History,
     pub processes: Vec<ProcessInfo>,
     pub table_state: TableState,
     pub sort_by: SortBy,
@@ -68,7 +68,7 @@ impl App {
         Self {
             sys: sys.expect("REASON"),
             running: true,
-            cpu_history: VecDeque::with_capacity(HISTORY_LEN),
+            cpu_history: History::new(HISTORY_LEN),
             processes: Vec::new(),
             table_state: TableState::default().with_selected(Some(0)),
             sort_by: SortBy::Cpu,
@@ -89,10 +89,8 @@ impl App {
         self.refresh_sys();
 
         let cpu = self.cpu_percent().round() as u64;
-        self.cpu_history.push_back(cpu);
-        if self.cpu_history.len() > HISTORY_LEN {
-            self.cpu_history.pop_front();
-        }
+
+        self.cpu_history.push(cpu);
 
         let selected = self.selected_pid();
 

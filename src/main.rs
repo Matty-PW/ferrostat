@@ -1,6 +1,6 @@
 mod app;
-mod ui;
 mod history;
+mod ui;
 
 use std::io;
 

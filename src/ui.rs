@@ -38,8 +38,7 @@ pub fn draw(frame: &mut Frame, app: &mut App) {
 
     // inner width = area width minus the two border columns
     let width = cpu_graph_area.width.saturating_sub(2) as usize;
-    let skip = app.cpu_history.len().saturating_sub(width);
-    let data: Vec<u64> = app.cpu_history.iter().skip(skip).copied().collect();
+    let data = app.cpu_history.recent(width);
 
     frame.render_widget(
         Sparkline::default()

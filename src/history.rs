@@ -20,7 +20,7 @@ impl History {
         self.samples.push_back(value);
     }
 
-    pub fn recent(&self n: usize) -> Vec<u64> {
+    pub fn recent(&self, n: usize) -> Vec<u64> {
         let skip = self.samples.len().saturating_sub(n);
         self.samples.iter().skip(skip).copied().collect()
     }
@@ -33,7 +33,7 @@ mod tests {
     #[test]
     fn drops_oldest_when_full() {
         let mut h = History::new(3);
-        for v = 1..=5 {
+        for v in 1..=5 {
             h.push(v)
         }
         assert_eq!(h.recent(10), vec![3, 4, 5]);
