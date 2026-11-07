@@ -24,6 +24,10 @@ impl History {
         let skip = self.samples.len().saturating_sub(n);
         self.samples.iter().skip(skip).copied().collect()
     }
+
+    pub fn latest(&self) -> Option<u64> {
+        self.samples.back().copied()
+    }
 }
 
 #[cfg(test)]
@@ -46,5 +50,14 @@ mod tests {
             h.push(v)
         }
         assert_eq!(h.recent(2), vec![4, 5]);
+    }
+
+    #[test]
+    fn latest_is_newest_sample() {
+        let mut h = History::new(3);
+        assert_eq!(h.latest(), None);
+        h.push(7);
+        h.push(9);
+        assert_eq!(h.latest(), Some(9));
     }
 }

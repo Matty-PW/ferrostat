@@ -55,6 +55,7 @@ pub struct App {
     pub processes: Vec<ProcessInfo>,
     pub table_state: TableState,
     pub sort_by: SortBy,
+    pub per_core: Vec<History>,
 }
 
 impl App {
@@ -64,14 +65,20 @@ impl App {
             RefreshKind::nothing()
                 .with_cpu(CpuRefreshKind::everything())
                 .with_memory(MemoryRefreshKind::everything()),
-        );
+        )
+        .expect("failed to read system info");
+
+        let core_count = sys.cpus().len();
+        let per_core = (0..core_count).map(|_| History::new(HISTORY_LEN)).collect();
+
         Self {
-            sys: sys.expect("REASON"),
+            sys,
             running: true,
             cpu_history: History::new(HISTORY_LEN),
             processes: Vec::new(),
             table_state: TableState::default().with_selected(Some(0)),
             sort_by: SortBy::Cpu,
+            per_core,
         }
     }
 
@@ -91,6 +98,10 @@ impl App {
         let cpu = self.cpu_percent().round() as u64;
 
         self.cpu_history.push(cpu);
+
+        for (history, cpu) in self.per_core.iter_mut().zip(self.sys.cpus()) {
+            history.push(cpu.usage().round() as u64);
+        }
 
         let selected = self.selected_pid();
 
