@@ -20,7 +20,11 @@ pub fn draw(frame: &mut Frame, app: &mut App) {
     let mem = app.mem_percent();
     frame.render_widget(
         Gauge::default()
-            .block(Block::bordered().title(" Memory "))
+            .block(Block::bordered().title(format!(
+                " Memory {} / {}",
+                format_bytes(app.used_memory()),
+                format_bytes(app.total_memory())
+            )))
             .gauge_style(Style::default().fg(Color::Green))
             .percent(mem.clamp(0.0, 100.0) as u16)
             .label(format!("{mem:.1}%")),
@@ -94,7 +98,17 @@ const CORE_COL_WIDTH: u16 = 20;
 
 fn draw_cpu_panel(frame: &mut Frame, area: Rect, app: &App) {
     // outer border
-    let block = Block::bordered().title(format!(" CPU {:.1}% ", app.cpu_percent()));
+    let threads = app.per_core.len();
+    let counts = match app.physical_cores {
+        Some(cores) => format!("{cores}C/{threads}T"),
+        None => format!("{threads}T"),
+    };
+    let block = Block::bordered().title(format!(
+        " {} · {counts} · {:.1}% ",
+        app.cpu_brand,
+        app.cpu_percent()
+    ));
+
     let inner = block.inner(area);
     frame.render_widget(block, area);
 
@@ -137,7 +151,7 @@ fn draw_cpu_panel(frame: &mut Frame, area: Rect, app: &App) {
         frame.render_widget(
             LineGauge::default()
                 .ratio((percent as f64 / 100.0).min(1.0))
-                .label(format!("C{i:<3}{percent:>3}%"))
+                .label(format!("C{:>3}{percent:>3}%", i + 1))
                 .filled_style(Style::default().fg(load_color(percent)))
                 .filled_symbol("━")
                 .unfilled_symbol("━")

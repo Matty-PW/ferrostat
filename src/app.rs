@@ -56,6 +56,8 @@ pub struct App {
     pub table_state: TableState,
     pub sort_by: SortBy,
     pub per_core: Vec<History>,
+    pub cpu_brand: String,
+    pub physical_cores: Option<usize>,
 }
 
 impl App {
@@ -70,6 +72,17 @@ impl App {
 
         let core_count = sys.cpus().len();
         let per_core = (0..core_count).map(|_| History::new(HISTORY_LEN)).collect();
+        let cpu_brand = sys
+            .cpus()
+            .first()
+            .map(|cpu| {
+                cpu.brand()
+                    .trim()
+                    .trim_end_matches(" Processor")
+                    .to_string()
+            })
+            .unwrap_or_default();
+        let physical_cores = System::physical_core_count().ok();
 
         Self {
             sys,
@@ -79,6 +92,8 @@ impl App {
             table_state: TableState::default().with_selected(Some(0)),
             sort_by: SortBy::Cpu,
             per_core,
+            physical_cores,
+            cpu_brand,
         }
     }
 
@@ -133,6 +148,14 @@ impl App {
             return 0.0;
         }
         self.sys.used_memory() as f64 / total as f64 * 100.0
+    }
+
+    pub fn used_memory(&self) -> u64 {
+        self.sys.used_memory()
+    }
+
+    pub fn total_memory(&self) -> u64 {
+        self.sys.total_memory()
     }
 
     pub fn run(&mut self, terminal: &mut DefaultTerminal) -> io::Result<()> {
