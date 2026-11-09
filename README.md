@@ -59,7 +59,7 @@ cargo run --release
 - [x] CPU and memory gauges
 - [x] CPU history graph
 - [x] Process table with sorting and selection
-- [ ] Per-core CPU view
+- [x] Per-core CPU view
 - [ ] Disk and network panels
 - [ ] Kill the selected process
 - [ ] Filter processes by name
