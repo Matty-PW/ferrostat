@@ -11,7 +11,7 @@ use ratatui::{
 };
 
 use sysinfo::{
-    CpuRefreshKind, MINIMUM_CPU_UPDATE_INTERVAL, MemoryRefreshKind, ProcessRefreshKind,
+    CpuRefreshKind, MINIMUM_CPU_UPDATE_INTERVAL, MemoryRefreshKind, Networks, ProcessRefreshKind,
     ProcessesToUpdate, RefreshKind, System,
 };
 
@@ -58,6 +58,11 @@ pub struct App {
     pub per_core: Vec<History>,
     pub cpu_brand: String,
     pub physical_cores: Option<usize>,
+    networks: Networks,
+    last_net_refresh: Instant,
+    net_elapsed: Duration,
+    pub net_receive: History,
+    pub net_transmit: History,
 }
 
 impl App {
@@ -94,6 +99,11 @@ impl App {
             per_core,
             physical_cores,
             cpu_brand,
+            networks: Networks::new_with_refreshed_list().expect("oh no, failed to read network interfaces"),
+            last_net_refresh: Instant::now(),
+            net_elapsed: Duration::ZERO,
+            net_receive: History::new(HISTORY_LEN),
+            net_transmit: History::new(HISTORY_LEN),
         }
     }
 
@@ -105,6 +115,10 @@ impl App {
             true, // remove processes that have exited
             ProcessRefreshKind::nothing().with_cpu().with_memory(),
         );
+        self.networks.refresh(true);
+        let now = Instant::now();
+        self.net_elapsed = now.duration_since(self.last_net_refresh);
+        self.last_net_refresh = now;
     }
 
     fn refresh(&mut self) {
@@ -116,6 +130,14 @@ impl App {
 
         for (history, cpu) in self.per_core.iter_mut().zip(self.sys.cpus()) {
             history.push(cpu.usage().round() as u64);
+        }
+
+        let secs = self.net_elapsed.as_secs_f64();
+        if secs > 0.0 {
+            let receive: u64 = self.networks.values().map(|n| n.received()).sum();
+            let transmit: u64 = self.networks.values().map(|n| n.transmitted()).sum();
+            self.net_receive.push((receive as f64 / secs) as u64);
+            self.net_transmit.push((transmit as f64 / secs) as u64);
         }
 
         let selected = self.selected_pid();

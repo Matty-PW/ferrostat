@@ -2,20 +2,26 @@ use ratatui::{
     Frame,
     layout::{Constraint, Layout, Rect},
     style::{Color, Modifier, Style},
+    text::Line,
     widgets::{Block, Gauge, LineGauge, Row, Sparkline, Table},
 };
 
 use crate::app::{App, SortBy};
+use crate::history::History;
 
 pub fn draw(frame: &mut Frame, app: &mut App) {
-    let [cpu_area, mem_area, table_area] = Layout::vertical([
+    let [top_area, mem_area, table_area] = Layout::vertical([
         Constraint::Length(10),
         Constraint::Length(3),
         Constraint::Min(5),
     ])
     .areas(frame.area());
 
+    let [cpu_area, net_area] =
+        Layout::horizontal([Constraint::Fill(2), Constraint::Fill(1)]).areas(top_area);
+
     draw_cpu_panel(frame, cpu_area, app);
+    draw_net_panel(frame, net_area, app);
 
     let mem = app.mem_percent();
     frame.render_widget(
@@ -94,6 +100,20 @@ fn format_bytes(bytes: u64) -> String {
     }
 }
 
+fn format_rate(bytes_per_sec: u64) -> String {
+    const KIB: f64 = 1024.0;
+    const MIB: f64 = KIB * 1024.0;
+
+    let b = bytes_per_sec as f64;
+    if b >= MIB {
+        format!("{:.1} MiB/s", b / MIB)
+    } else if b >= KIB {
+        format!("{:.1} KiB/s", b / KIB)
+    } else {
+        format!("{bytes_per_sec} B/s")
+    }
+}
+
 const CORE_COL_WIDTH: u16 = 20;
 
 fn draw_cpu_panel(frame: &mut Frame, area: Rect, app: &App) {
@@ -167,4 +187,43 @@ fn load_color(percent: u64) -> Color {
         50..80 => Color::Yellow,
         _ => Color::Red,
     }
+}
+
+fn draw_net_panel(frame: &mut Frame, area: Rect, app: &App) {
+    let block = Block::bordered().title(" Network ");
+    let inner = block.inner(area);
+    frame.render_widget(block, area);
+
+    let [down_area, up_area] =
+        Layout::vertical([Constraint::Fill(1), Constraint::Fill(1)]).areas(inner);
+
+    draw_rate_graph(frame, down_area, "↓", &app.net_receive, Color::Green);
+    draw_rate_graph(frame, up_area, "↑", &app.net_transmit, Color::Magenta);
+}
+
+fn draw_rate_graph(frame: &mut Frame, area: Rect, arrow: &str, history: &History, color: Color) {
+    let [label_area, graph_area] =
+        Layout::vertical([Constraint::Length(1), Constraint::Fill(1)]).areas(area);
+
+    let data = history.recent(graph_area.width as usize);
+    let latest = history.latest().unwrap_or(0);
+    let peak = data.iter().copied().max().unwrap_or(0);
+
+    frame.render_widget(
+        Line::from(format!(
+            "{arrow} {} (peak {})",
+            format_rate(latest),
+            format_rate(peak)
+        ))
+        .style(Style::default().fg(color)),
+        label_area,
+    );
+
+    frame.render_widget(
+        Sparkline::default()
+            .style(Style::default().fg(color))
+            .max(peak.max(1))
+            .data(&data),
+        graph_area,
+    );
 }
