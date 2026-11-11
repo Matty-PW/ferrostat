@@ -227,3 +227,16 @@ fn draw_rate_graph(frame: &mut Frame, area: Rect, arrow: &str, history: &History
         graph_area,
     );
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn formats_rates() {
+        assert_eq!(format_rate(0), "0 B/s");
+        assert_eq!(format_rate(512), "512 B/s");
+        assert_eq!(format_rate(1536), "1.5 KiB/s");
+        assert_eq!(format_rate(5 * 1024 * 1024), "5.0 MiB/s");
+    }
+}

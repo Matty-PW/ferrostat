@@ -99,7 +99,8 @@ impl App {
             per_core,
             physical_cores,
             cpu_brand,
-            networks: Networks::new_with_refreshed_list().expect("oh no, failed to read network interfaces"),
+            networks: Networks::new_with_refreshed_list()
+                .expect("oh no, failed to read network interfaces"),
             last_net_refresh: Instant::now(),
             net_elapsed: Duration::ZERO,
             net_receive: History::new(HISTORY_LEN),
