@@ -60,7 +60,8 @@ cargo run --release
 - [x] CPU history graph
 - [x] Process table with sorting and selection
 - [x] Per-core CPU view
-- [ ] Disk and network panels
+- [x] Network panels
+- [ ] Disk panels
 - [ ] Kill the selected process
 - [ ] Filter processes by name
 - [ ] Themes and a config file
