@@ -250,7 +250,9 @@ fn draw_help_popup(frame: &mut Frame) {
             Line::from(vec![
                 Span::styled(
                     format!("{key:>9}  "),
-                    Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD),
+                    Style::default()
+                        .fg(Color::Yellow)
+                        .add_modifier(Modifier::BOLD),
                 ),
                 Span::raw(*desc),
             ])
@@ -276,10 +278,8 @@ fn centered_rect(width: u16, height: u16, area: Rect) -> Rect {
     let [area] = Layout::vertical([Constraint::Length(height)])
         .flex(Flex::Center)
         .areas(area);
-    return area
+    area
 }
-
-
 
 #[cfg(test)]
 mod tests {

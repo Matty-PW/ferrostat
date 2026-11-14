@@ -250,7 +250,7 @@ impl App {
             KeyCode::Down | KeyCode::Char('j') => self.select_next(),
             KeyCode::Up | KeyCode::Char('k') => self.select_previous(),
             KeyCode::Char('s') => self.cycle_sort(),
-        _ => {}
+            _ => {}
         }
     }
 
