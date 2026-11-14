@@ -48,6 +48,7 @@ cargo run --release
 | `↓` / `j`       | Select next process          |
 | `s`             | Cycle sort column            |
 | `q` / `Esc`     | Quit                         |
+| `?`             | Help                         |
 
 ## Notes
 
@@ -61,6 +62,7 @@ cargo run --release
 - [x] Process table with sorting and selection
 - [x] Per-core CPU view
 - [x] Network panels
+- [x] Help menu
 - [ ] Disk panels
 - [ ] Kill the selected process
 - [ ] Filter processes by name
