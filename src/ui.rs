@@ -1,12 +1,12 @@
 use ratatui::{
     Frame,
-    layout::{Constraint, Layout, Rect},
+    layout::{Constraint, Flex, Layout, Rect},
     style::{Color, Modifier, Style},
-    text::Line,
-    widgets::{Block, Gauge, LineGauge, Row, Sparkline, Table},
+    text::{Line, Span},
+    widgets::{Block, Clear, Gauge, LineGauge, Padding, Paragraph, Row, Sparkline, Table},
 };
 
-use crate::app::{App, SortBy};
+use crate::app::{App, Mode, SortBy};
 use crate::history::History;
 
 pub fn draw(frame: &mut Frame, app: &mut App) {
@@ -87,6 +87,10 @@ pub fn draw(frame: &mut Frame, app: &mut App) {
         .highlight_symbol("> ");
 
     frame.render_stateful_widget(table, table_area, &mut app.table_state);
+
+    if app.mode == Mode::Help {
+        draw_help_popup(frame);
+    }
 }
 
 fn format_bytes(bytes: u64) -> String {
@@ -227,6 +231,55 @@ fn draw_rate_graph(frame: &mut Frame, area: Rect, arrow: &str, history: &History
         graph_area,
     );
 }
+
+const KEYBINDINGS: &[(&str, &str)] = &[
+    ("↑ / k", "Select previous process"),
+    ("↓ / j", "Select next process"),
+    ("s", "Cycle sort column"),
+    ("?", "Toggle this help"),
+    ("q / Esc", "Quit"),
+];
+
+fn draw_help_popup(frame: &mut Frame) {
+    let height = KEYBINDINGS.len() as u16 + 4;
+    let area = centered_rect(44, height, frame.area());
+
+    let lines: Vec<Line> = KEYBINDINGS
+        .iter()
+        .map(|(key, desc)| {
+            Line::from(vec![
+                Span::styled(
+                    format!("{key:>9}  "),
+                    Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD),
+                ),
+                Span::raw(*desc),
+            ])
+        })
+        .collect();
+
+    let popup = Paragraph::new(lines).block(
+        Block::bordered()
+            .title(" Help ")
+            .title_bottom(Line::from(" Esc to close ").centered())
+            .padding(Padding::vertical(1)),
+    );
+
+    frame.render_widget(Clear, area);
+    frame.render_widget(popup, area);
+}
+
+fn centered_rect(width: u16, height: u16, area: Rect) -> Rect {
+    let [area] = Layout::horizontal([Constraint::Length(width)])
+        .flex(Flex::Center)
+        .areas(area);
+
+    let [area] = Layout::vertical([Constraint::Length(height)])
+        .flex(Flex::Center)
+        .areas(area);
+    return area
+}
+
+
 
 #[cfg(test)]
 mod tests {

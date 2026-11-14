@@ -22,6 +22,12 @@ use crate::ui;
 const TICK_RATE: Duration = Duration::from_millis(1000);
 const HISTORY_LEN: usize = 200;
 
+#[derive(Clone, Copy, PartialEq)]
+pub enum Mode {
+    Normal,
+    Help,
+}
+
 pub struct ProcessInfo {
     pub pid: u32,
     pub name: String,
@@ -63,6 +69,7 @@ pub struct App {
     net_elapsed: Duration,
     pub net_receive: History,
     pub net_transmit: History,
+    pub mode: Mode,
 }
 
 impl App {
@@ -105,6 +112,7 @@ impl App {
             net_elapsed: Duration::ZERO,
             net_receive: History::new(HISTORY_LEN),
             net_transmit: History::new(HISTORY_LEN),
+            mode: Mode::Normal,
         }
     }
 
@@ -229,11 +237,26 @@ impl App {
     }
 
     fn handle_key(&mut self, code: KeyCode) {
+        match self.mode {
+            Mode::Normal => self.handle_normal_key(code),
+            Mode::Help => self.handle_help_key(code),
+        }
+    }
+
+    fn handle_normal_key(&mut self, code: KeyCode) {
         match code {
             KeyCode::Char('q') | KeyCode::Esc => self.running = false,
+            KeyCode::Char('?') => self.mode = Mode::Help,
             KeyCode::Down | KeyCode::Char('j') => self.select_next(),
             KeyCode::Up | KeyCode::Char('k') => self.select_previous(),
             KeyCode::Char('s') => self.cycle_sort(),
+        _ => {}
+        }
+    }
+
+    fn handle_help_key(&mut self, code: KeyCode) {
+        match code {
+            KeyCode::Esc | KeyCode::Char('q') | KeyCode::Char('?') => self.mode = Mode::Normal,
             _ => {}
         }
     }
