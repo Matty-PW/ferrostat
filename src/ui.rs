@@ -292,4 +292,10 @@ mod tests {
         assert_eq!(format_rate(1536), "1.5 KiB/s");
         assert_eq!(format_rate(5 * 1024 * 1024), "5.0 MiB/s");
     }
+
+    #[test]
+    fn centered_rect_is_centered() {
+        let area = Rect::new(0, 0, 100, 50);
+        assert_eq!(centered_rect(40, 10, area), Rect::new(30, 20, 40, 10));
+    }
 }
