@@ -78,7 +78,7 @@ pub fn draw(frame: &mut Frame, app: &mut App) {
 
     let table = Table::new(rows, width)
         .header(header)
-        .block(Block::bordered().title(" Processes (↑↓/jk select, 's' to sort) "))
+        .block(Block::bordered().title(" Processes (? help) "))
         .row_highlight_style(
             Style::default()
                 .bg(Color::DarkGray)
