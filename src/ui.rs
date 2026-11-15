@@ -37,6 +37,14 @@ pub fn draw(frame: &mut Frame, app: &mut App) {
         mem_area,
     );
 
+    draw_process_table(frame, table_area, app);
+
+    if app.mode == Mode::Help {
+        draw_help_popup(frame);
+    }
+}
+
+fn draw_process_table(frame: &mut Frame, area: Rect, app: &mut App) {
     let label = |text: &str, col: SortBy| {
         if app.sort_by != col {
             return text.to_string();
@@ -76,9 +84,25 @@ pub fn draw(frame: &mut Frame, app: &mut App) {
         Constraint::Length(10),
     ];
 
+    let title = match (app.mode, app.filter.is_empty()) {
+        (Mode::Filter, _) => format!(" Filter: {}_ (Enter apply · Esc clear) ", app.filter),
+        (_, false) => format!(
+            " Processes matching \"{}\" · {} shown · Esc clears ",
+            app.filter,
+            app.processes.len()
+        ),
+        (_, true) => " Processes (? help) ".to_string(),
+    };
+
+    let border_style = if app.mode == Mode::Filter {
+        Style::default().fg(Color::Yellow)
+    } else {
+        Style::default()
+    };
+
     let table = Table::new(rows, width)
         .header(header)
-        .block(Block::bordered().title(" Processes (? help) "))
+        .block(Block::bordered().title(title).border_style(border_style))
         .row_highlight_style(
             Style::default()
                 .bg(Color::DarkGray)
@@ -86,11 +110,7 @@ pub fn draw(frame: &mut Frame, app: &mut App) {
         )
         .highlight_symbol("> ");
 
-    frame.render_stateful_widget(table, table_area, &mut app.table_state);
-
-    if app.mode == Mode::Help {
-        draw_help_popup(frame);
-    }
+    frame.render_stateful_widget(table, area, &mut app.table_state);
 }
 
 fn format_bytes(bytes: u64) -> String {

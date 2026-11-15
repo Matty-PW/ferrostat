@@ -26,8 +26,10 @@ const HISTORY_LEN: usize = 200;
 pub enum Mode {
     Normal,
     Help,
+    Filter,
 }
 
+#[derive(Clone)]
 pub struct ProcessInfo {
     pub pid: u32,
     pub name: String,
@@ -70,6 +72,8 @@ pub struct App {
     pub net_receive: History,
     pub net_transmit: History,
     pub mode: Mode,
+    all_processes: Vec<ProcessInfo>,
+    pub filter: String,
 }
 
 impl App {
@@ -113,6 +117,8 @@ impl App {
             net_receive: History::new(HISTORY_LEN),
             net_transmit: History::new(HISTORY_LEN),
             mode: Mode::Normal,
+            all_processes: Vec::new(),
+            filter: String::new(),
         }
     }
 
@@ -240,11 +246,17 @@ impl App {
         match self.mode {
             Mode::Normal => self.handle_normal_key(code),
             Mode::Help => self.handle_help_key(code),
+            Mode::Filter => self.handle_filter_key(code),
         }
     }
 
     fn handle_normal_key(&mut self, code: KeyCode) {
         match code {
+            KeyCode::Esc if !self.filter.is_empty() => {
+                self.filter.clear();
+                self.update_view();
+            }
+            KeyCode::Char('/') => self.mode = Mode::Filter,
             KeyCode::Char('q') | KeyCode::Esc => self.running = false,
             KeyCode::Char('?') => self.mode = Mode::Help,
             KeyCode::Down | KeyCode::Char('j') => self.select_next(),
@@ -271,10 +283,8 @@ impl App {
     }
 
     fn cycle_sort(&mut self) {
-        let selected = self.selected_pid();
         self.sort_by = self.sort_by.next();
-        self.sort_processes();
-        self.restore_selection(selected);
+        self.update_view();
     }
 
     fn selected_pid(&self) -> Option<u32> {
@@ -295,4 +305,44 @@ impl App {
             .unwrap_or_else(|| self.table_state.selected().unwrap_or(0).min(last));
         self.table_state.select(Some(index));
     }
+
+    fn update_view(&mut self) {
+        let selected = self.selected_pid();
+
+        self.processes = self
+            .all_processes
+            .iter()
+            .filter(|p| name_matches(&p.name, &self.filter))
+            .cloned()
+            .collect();
+
+        self.sort_processes();
+        self.restore_selection(selected);
+    }
+
+    fn handle_filter_key(&mut self, code: KeyCode) {
+        match code {
+            KeyCode::Enter => self.mode = Mode::Normal,
+            KeyCode::Esc => {
+                self.filter.clear();
+                self.mode = Mode::Normal;
+                self.update_view();
+            }
+            KeyCode::Backspace => {
+                self.filter.pop();
+                self.update_view();
+            }
+            KeyCode::Up => self.select_previous(),
+            KeyCode::Down => self.select_next(),
+            KeyCode::Char(c) => {
+                self.filter.push(c);
+                self.update_view();
+            }
+            _ => {}
+        }
+    }
+}
+
+fn name_matches(name: &str, filter: &str) -> bool {
+    name.to_lowercase().contains(&filter.to_lowercase())
 }
